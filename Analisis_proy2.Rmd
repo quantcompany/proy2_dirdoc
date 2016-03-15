@@ -2,20 +2,121 @@
 title: "Proyecto 2 Dirección Docencia"
 author: "Alvaro Fuentes"
 date: "Marzo, 2016"
-output: html_document
+output:
+  html_document:
+    theme: readable
 ---
 # Dimensión: Docencia
 ## 1. Docentes con doctorado
 
-Enesta 
-```{r}
-summary(cars)
+El indicador para los para esta variable se define como:
+
+$$ IDD = \frac{\text{Docentes con Doctorado TCE}}{\text{Docentes Totales TCE}} $$
+
+Donde:
+
+IDD = Indicador de Docentes con Doctorado
+
+TCE = Tiempo Completo Equivalente 
+
+
+y es calculado de la siguiente manera:
+
+$$ TCE = 1*\text{Docentes Tiempo Completo} + \frac{1}{2} * \text{Docentes Medio Tiempo} + \frac{1}{4} * \text{Docentes Cátedra} $$
+
+Sea:
+
+* $C$ = Docentes de tiempo completo
+
+* $M$ = Docentes de medio tiempo
+
+* $Cat$ = Docentes de cátedra
+
+* $C_d$ = Docentes de tiempo completo con doctorado
+
+* $M_d$ = Docentes de medio tiempo con doctorado
+
+* $Cat_d$ = Docentes de cátedra con doctorado
+
+* $C'$ = Docentes de tiempo completo con sin doctorado
+
+* $M'$ = Docentes de medio tiempo con sin doctorado
+
+* $Cat'$ = Docentes de cátedra con sin doctorado
+
+Combinando las definiciones se tiene entonces que:
+
+$$ IDD = \frac{C_d + \frac{1}{2} M_d + \frac{1}{4} Cat_d}{C + \frac{1}{2} M + \frac{1}{4} Cat} = \frac{C_d + \frac{1}{2} M_d + \frac{1}{4} Cat_d}{C_d + \frac{1}{2} M_d + \frac{1}{4} Cat_d + C' + \frac{1}{2} M' + \frac{1}{4} Cat'} $$
+
+
+Con esta descomposición del indicador es posible calcular que pasaría con el índice ante el ingreso de nuevos profesores: un profesor adicional puede entrar bajo alguno de los 3 tipos de contrato: tiempo completo, medio tiempo o cátedra. Asímismo este profesor puede tener título de doctorado o no tenerlo.
+
+En el siguiente gráfico se presentan varios escenarios de cuál sería el valor del IDD ante la contratación de cierto número de docentes, según su tipo de contrato y título. La línea contínua azul, muestra los valores de la IDD el caso extremo en el cual *todos* los nuevos docentes tuvieran título de doctor y éstos fueran contratados a tiempo completo. Por el otro lado la línea azul punteada muestra el otro extremo, en el cual *todos* los docentes contratados son de tiempo completo pero ninguno de ellos cuenta con doctorado. El caso que se dará en la realidad será uno entre estos dos extremos y la gráfica nos ayuda a aproximar el valor que tendría IDD ante la contratación de cierta cantidad de docentes adicionales.
+
+Teniendo en cuenta que el valor de este indicador actualmente es de *14.7%*
+
+```{r, warning=FALSE, echo=FALSE, fig.height=6, fig.width=10}
+library(ggplot2)
+theme_set(theme_bw(base_size = 14))
+
+# Los valores default es para que de el valor que tiene el indece segun
+# el MIDE (14.7%)
+IDD <- function(C_d = 19,M_d = 15, Cat_d=15,C_ = 100 ,M_=100,Cat_ = 100){
+    numerador = C_d + 0.5*M_d + 0.25 * Cat_d
+    denominador = C_d + 0.5*M_d + 0.25 * Cat_d + C_ + 0.5*M_ + 0.25 * Cat_
+    return(100*numerador/denominador)
+}
+
+nuevos <- 0:50
+
+tiempo_completo_d <- IDD(C_d = 19 + nuevos)
+medio_tiempo_d <- IDD(M_d = 15 + nuevos)
+catedra_d <- IDD(Cat_d = 15 + nuevos)
+tiempo_completo <- IDD(C_ = 100 + nuevos)
+medio_tiempo <- IDD(M_ = 100 + nuevos)
+catedra <- IDD(Cat_ = 100 + nuevos)
+
+IDD <- c(tiempo_completo_d,medio_tiempo_d,catedra_d,tiempo_completo,medio_tiempo,catedra)
+
+tipo_de_contrato <- factor(rep(c("TC","MT","Cátedra"), each = 51, times =2), ordered = TRUE, levels = c("Cátedra","MT","TC"))
+tipo_titulo <- factor(rep(c("Doctorado","Sin Doctorado"), each = 153))
+
+
+df <- data.frame(IDD = IDD, Contrato = tipo_de_contrato,
+                 Titulo = tipo_titulo, nuevos = rep(nuevos, times = 6))
+
+ggplot(df) + 
+    geom_line(aes(x = nuevos, y = IDD, linetype = Titulo, color = Contrato),  size = 1.2) + 
+    xlab("Nuevos Docentes") + ylab('IDD (%)') + 
+    ggtitle("IDD ante ingreso de nuevos profesores") + 
+    scale_x_continuous(breaks = seq(0, 50, 5)) + 
+    scale_y_continuous(breaks = seq(10, 36, 2)) + 
+    theme(legend.position = "bottom")
+
+
 ```
 
-You can also embed plots, for example:
+#### ¿Cuanto contribuye un doctor contratado al IDD?
 
-```{r, echo=FALSE}
-plot(cars)
+```{r, warning=FALSE, echo=FALSE}
+
+nuevos2 <- 1:50
+
+contr_tiempo_completo <- diff(tiempo_completo)
+contr_medio_tiempo <- diff(medio_tiempo)
+contr_catedra <- diff(catedra)
+tipo <- factor(rep(c("Tiempo Completo","Medio Tiempo","Cátedra"), each = 50))
+
+df2 <- data.frame(Cambio_IDD = c(contr_tiempo_completo,contr_medio_tiempo,contr_catedra),
+                 Tipo = tipo, nuevos = rep(nuevos2, times=3))
+
+ggplot(df2) + 
+    geom_line(aes(x = nuevos, y = Cambio_IDD, color = Tipo)) + 
+    xlab("Nuevos Doctores") + ylab('Cambio en el IDD') + 
+    ggtitle("Cambio en el IDD ante ingreso de nuevos \n profesores con doctorado") + 
+    theme(legend.position = "bottom")
+
+
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
