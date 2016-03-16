@@ -1,30 +1,29 @@
 ---
-title: "Proyecto 2 Dirección Docencia"
+title: "Análisis Componentes del MIDE"
 author: "Alvaro Fuentes"
-date: "Marzo, 2016"
+date: "Primer semestre, 2016"
 output:
+  pdf_document: default
   html_document:
     theme: readable
 ---
 # Dimensión: Docencia
-## 1. Docentes con doctorado
+## 1. Docentes con Doctorado (Peso = 10%)
+Según el Ministerio de Educación "*El nivel y el compromiso de los docentes son un indicador de la calidad de la eduación... la investigación y desarrollo de nuevas tecnologías requieren docentes con altos niveles de formación*" esta es la principal razón por la cual se le da a esta variable un peso relativamenete alto.
 
-El indicador para los para esta variable se define como:
+El índice para los para esta variable se define como:
 
-$$ IDD = \frac{\text{Docentes con Doctorado TCE}}{\text{Docentes Totales TCE}} $$
+$$ IDD = \frac{\text{Docentes con Doctorado TCE}}{\text{Docentes Totales en TCE}} $$
 
 Donde:
 
-IDD = Indicador de Docentes con Doctorado
+IDD = Indice de Docentes con Doctorado
 
-TCE = Tiempo Completo Equivalente 
-
-
-y es calculado de la siguiente manera:
+TCE = Tiempo Completo Equivalente y es calculado de la siguiente manera:
 
 $$ TCE = 1*\text{Docentes Tiempo Completo} + \frac{1}{2} * \text{Docentes Medio Tiempo} + \frac{1}{4} * \text{Docentes Cátedra} $$
 
-Sea:
+Para la Universidad de Manizales el valor del IDD es de *15.0%*. Para poder analizar este índice de mejor manera, es necesario descomponerlo, definamos:
 
 * $C$ = Docentes de tiempo completo
 
@@ -49,74 +48,168 @@ Combinando las definiciones se tiene entonces que:
 $$ IDD = \frac{C_d + \frac{1}{2} M_d + \frac{1}{4} Cat_d}{C + \frac{1}{2} M + \frac{1}{4} Cat} = \frac{C_d + \frac{1}{2} M_d + \frac{1}{4} Cat_d}{C_d + \frac{1}{2} M_d + \frac{1}{4} Cat_d + C' + \frac{1}{2} M' + \frac{1}{4} Cat'} $$
 
 
-Con esta descomposición del indicador es posible calcular que pasaría con el índice ante el ingreso de nuevos profesores: un profesor adicional puede entrar bajo alguno de los 3 tipos de contrato: tiempo completo, medio tiempo o cátedra. Asímismo este profesor puede tener título de doctorado o no tenerlo.
+Con esta descomposición del índice es posible calcular que pasaría con el índice ante el ingreso de nuevos profesores: un profesor adicional puede entrar bajo alguno de los 3 tipos de contrato: tiempo completo, medio tiempo o cátedra. Asímismo este profesor puede tener título de doctorado o no tenerlo.
 
 En el siguiente gráfico se presentan varios escenarios de cuál sería el valor del IDD ante la contratación de cierto número de docentes, según su tipo de contrato y título. La línea contínua azul, muestra los valores de la IDD el caso extremo en el cual *todos* los nuevos docentes tuvieran título de doctor y éstos fueran contratados a tiempo completo. Por el otro lado la línea azul punteada muestra el otro extremo, en el cual *todos* los docentes contratados son de tiempo completo pero ninguno de ellos cuenta con doctorado. El caso que se dará en la realidad será uno entre estos dos extremos y la gráfica nos ayuda a aproximar el valor que tendría IDD ante la contratación de cierta cantidad de docentes adicionales.
 
-Teniendo en cuenta que el valor de este indicador actualmente es de *14.7%*
 
-```{r, warning=FALSE, echo=FALSE, fig.height=6, fig.width=10}
+```{r, warning=FALSE, echo=FALSE, fig.width=5.5, fig.width=8.5}
 library(ggplot2)
 theme_set(theme_bw(base_size = 14))
 
+docentes <- matrix(c(25,70,19,47,27,13,201,68,12), ncol = 3)
+rownames(docentes) <- c("Pregrado","Maestría","Doctorado")
+colnames(docentes) <- c("TC","MT","Cátedra")
+# Inicializando constantes:
+#Docentes Tiempo Completo Equivalente
+doc_por_contrato <- colSums(docentes)
+DTCE <- as.numeric(doc_por_contrato[1] + 0.5*doc_por_contrato[2] + 0.25 *doc_por_contrato[3])
+
+#Docentes con doctorado
+TC_d <- docentes[3,1]
+MT_d <- docentes[3,2]
+Cat_d <- docentes[3,3]
+
+#Docentes sin doctorado
+TC_ <- doc_por_contrato[1] - TC_d
+MT_ <- doc_por_contrato[2] - MT_d
+Cat_ <- doc_por_contrato[3] - Cat_d
+
 # Los valores default es para que de el valor que tiene el indece segun
-# el MIDE (14.7%)
-IDD <- function(C_d = 19,M_d = 15, Cat_d=15,C_ = 100 ,M_=100,Cat_ = 100){
-    numerador = C_d + 0.5*M_d + 0.25 * Cat_d
-    denominador = C_d + 0.5*M_d + 0.25 * Cat_d + C_ + 0.5*M_ + 0.25 * Cat_
-    return(100*numerador/denominador)
+# el MIDE aprox.(14.7%) cambiarlos por los valores reales.
+ 
+IDD <- function(aTC_d = TC_d, aMT_d = MT_d, aCat_d = Cat_d,
+                aTC_ = TC_, aMT_ = MT_, aCat_ = Cat_){
+    numerador <- aTC_d + 0.5*aMT_d + 0.25 * aCat_d
+    denominador <- aTC_d + 0.5*aMT_d + 0.25 * aCat_d + aTC_ + 0.5*aMT_ + 0.25 * aCat_
+    return(100*as.numeric(numerador/denominador))
 }
 
 nuevos <- 0:50
 
-tiempo_completo_d <- IDD(C_d = 19 + nuevos)
-medio_tiempo_d <- IDD(M_d = 15 + nuevos)
-catedra_d <- IDD(Cat_d = 15 + nuevos)
-tiempo_completo <- IDD(C_ = 100 + nuevos)
-medio_tiempo <- IDD(M_ = 100 + nuevos)
-catedra <- IDD(Cat_ = 100 + nuevos)
+tiempo_completo_d <- IDD(aTC_d = TC_d + nuevos)
+medio_tiempo_d <- IDD(aMT_d = MT_d + nuevos)
+catedra_d <- IDD(aCat_d = Cat_d + nuevos)
+tiempo_completo <- IDD(aTC_ = TC_ + nuevos)
+medio_tiempo <- IDD(aMT_ = MT_ + nuevos)
+catedra <- IDD(aCat_ = Cat_ + nuevos)
 
-IDD <- c(tiempo_completo_d,medio_tiempo_d,catedra_d,tiempo_completo,medio_tiempo,catedra)
+IDD_values <- c(tiempo_completo_d,medio_tiempo_d,catedra_d,tiempo_completo,medio_tiempo,catedra)
 
 tipo_de_contrato <- factor(rep(c("TC","MT","Cátedra"), each = 51, times =2), ordered = TRUE, levels = c("Cátedra","MT","TC"))
+
 tipo_titulo <- factor(rep(c("Doctorado","Sin Doctorado"), each = 153))
 
 
-df <- data.frame(IDD = IDD, Contrato = tipo_de_contrato,
+df <- data.frame(IDD = IDD_values, Contrato = tipo_de_contrato,
                  Titulo = tipo_titulo, nuevos = rep(nuevos, times = 6))
 
 ggplot(df) + 
     geom_line(aes(x = nuevos, y = IDD, linetype = Titulo, color = Contrato),  size = 1.2) + 
     xlab("Nuevos Docentes") + ylab('IDD (%)') + 
-    ggtitle("IDD ante ingreso de nuevos profesores") + 
+    ggtitle("Figura 1. IDD ante ingreso de nuevos docentes") + 
     scale_x_continuous(breaks = seq(0, 50, 5)) + 
-    scale_y_continuous(breaks = seq(10, 36, 2)) + 
+    scale_y_continuous(breaks = seq(10, 30, 2)) + 
     theme(legend.position = "bottom")
-
-
 ```
 
-#### ¿Cuanto contribuye un doctor contratado al IDD?
+### ¿Cuánto contribuye un docente contratado al IDD?
 
-```{r, warning=FALSE, echo=FALSE}
+La fórmula anterior también permite calcular cuanto sería el aporte promedio de un docente contratado al IDD, ese aporte depende de su tipo de contrato y si cuenta con doctorado o no. Al nivel de este indicador para la Universidad de Manizales haría falta alrededor de 30 nuevos doctores contratados a tiempo completo para subir el IDD en 10%. Lógicamente el contratar a un docente sin doctorado reduce este indicador, sin embargo la reducción es bastante pequeña comparada con la ganancia recibida por la contratación de un docente con doctorado.
 
-nuevos2 <- 1:50
+```{r, warning=FALSE, echo=FALSE, fig.width=5.5, fig.width=8.5}
 
-contr_tiempo_completo <- diff(tiempo_completo)
-contr_medio_tiempo <- diff(medio_tiempo)
-contr_catedra <- diff(catedra)
-tipo <- factor(rep(c("Tiempo Completo","Medio Tiempo","Cátedra"), each = 50))
+tc_d_c <- mean(diff(tiempo_completo_d[1:31]))
+mt_d_c <- mean(diff(medio_tiempo_d[1:31]))
+cat_d_c <- mean(diff(catedra_d[1:31]))
+tc_c <- mean(diff(tiempo_completo[1:31]))
+mt_c <- mean(diff(medio_tiempo[1:31]))
+cat_c <- mean(diff(catedra[1:31]))
 
-df2 <- data.frame(Cambio_IDD = c(contr_tiempo_completo,contr_medio_tiempo,contr_catedra),
-                 Tipo = tipo, nuevos = rep(nuevos2, times=3))
+x_labs <- factor(c("Doctor TC", "Doctor MT", "Doctor Cátedra", "TC", "MT","Cátedra"), ordered = TRUE, levels = c("Doctor TC", "Doctor MT", "Doctor Cátedra", "TC", "MT","Cátedra"))
+bars <- c(tc_d_c, mt_d_c, cat_d_c, tc_c, mt_c, cat_c)
+bars_labs <- as.character(round(bars,3))
+ggplot() + 
+    geom_bar(aes(x = x_labs, y = bars), 
+             fill = 'steelblue3', color = 'black', stat='identity') + 
+    geom_text(aes(x = x_labs, y = bars, label= bars_labs),size = 4.5, vjust=-0.4) +
+    xlab("Tipo de contrato y educación del docente") + 
+    ylab("Contribución al IDD (%)") + 
+    ggtitle("Figura 2. Contribución al IDD (%) de un nuevo docente")
+```
+
+### ¿Qué sucede con el IDD ante la titulación de un docente?
+
+La fórmula anterior también permite calcular cuanto sería el aporte aproximado de un docente que teniendo un contrato de tiempo completo,  adquiere el título de doctor (y mantiene su tipo de contrato), este aporte sería aproximadamente `r round(IDD(aTC_d = TC_d +1, aTC_ = TC_ -1)- IDD(),2)`%. Según estas estimaciones se necesitaría doctorar a aproximadamente 23 profesores de tiempo completo para subir el IDD en 10%. Desde el punto de vista de mejorar el IDD, es por lo tanto ligeramente mas conveniente doctorar a un docente de tiempo completo que ya está contratado, que contratar a un nuevo docente con doctorado.
+
+
+## 2. Docentes con Posgrado (Peso = 3%)
+
+Un análisis casi identico puede al anterior puede realizarse con este índice, el cual está definido de manera similar al anterior, pero en este caso se consideran docentes con posgrados (excluyento especializaciones).
+
+$$ IDP = \frac{\text{Docentes con Posgrado TCE}}{\text{Docentes Totales en TCE}} $$
+
+```{r, warning=FALSE, echo=FALSE, fig.width=5.5, fig.width=8.5}
+
+#Docentes sin posgrado
+TC_sp <- docentes[1,1]
+MT_sp <- docentes[1,2]
+Cat_sp <- docentes[1,3]
+
+#Docentes con posgrado
+TC_p <- doc_por_contrato[1] - TC_sp
+MT_p <- doc_por_contrato[2] - MT_sp
+Cat_p <- doc_por_contrato[3] - Cat_sp
+
+
+IDP <- function(aTC_p = TC_p, aMT_p = MT_p, aCat_p = Cat_p,
+                aTC_sp = TC_sp, aMT_sp = MT_sp, aCat_sp = Cat_sp){
+    numerador <- aTC_p + 0.5*aMT_p + 0.25 * aCat_p
+    denominador <- aTC_p + 0.5*aMT_p + 0.25 * aCat_p + aTC_sp + 0.5*aMT_sp + 0.25 * aCat_sp
+    return(100*as.numeric(numerador/denominador))
+}
+
+tiempo_completo_p <- IDP(aTC_p = TC_p + nuevos)
+medio_tiempo_p <- IDP(aMT_p = MT_p + nuevos)
+catedra_p <- IDP(aCat_p = Cat_p + nuevos)
+tiempo_completo_sp <- IDP(aTC_sp = TC_sp + nuevos)
+medio_tiempo_sp <- IDP(aMT_sp = MT_sp + nuevos)
+catedra_sp <- IDP(aCat_sp = Cat_sp + nuevos)
+
+IDP_values <- c(tiempo_completo_p, medio_tiempo_p, catedra_p, tiempo_completo_sp, medio_tiempo_sp, catedra_sp)
+
+tipo_titulo2 <- factor(rep(c("Posgrado","Sin Posgrado"), each = 153))
+
+
+df2 <- data.frame(IDP = IDP_values, Contrato = tipo_de_contrato,
+                 Titulo = tipo_titulo2, nuevos = rep(nuevos, times = 6))
 
 ggplot(df2) + 
-    geom_line(aes(x = nuevos, y = Cambio_IDD, color = Tipo)) + 
-    xlab("Nuevos Doctores") + ylab('Cambio en el IDD') + 
-    ggtitle("Cambio en el IDD ante ingreso de nuevos \n profesores con doctorado") + 
+    geom_line(aes(x = nuevos, y = IDP, linetype = Titulo, color = Contrato),  size = 1.2) + 
+    xlab("Nuevos Docentes") + ylab('IDP (%)') + 
+    ggtitle("Figura 3. IDP ante ingreso de nuevos docentes") + 
+    scale_x_continuous(breaks = seq(0, 50, 5)) + 
+    scale_y_continuous(breaks = seq(45, 65, 2)) + 
     theme(legend.position = "bottom")
-
-
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## ¿Que sucede con la IDP ante la contratación de un docente?
+
+## 3. Relación Alumno Docente (Peso = 7%)
+Esta variable tiene casi tanta importancia para el MIDE como la variable anterior.
+
+El índice para los para esta variable se define como:
+
+$$ RAD = \frac{\text{Número de estudiantes de pregrado}}{\text{Docentes Totales TCE}} $$
+
+Sea _E_ el número de estudiantes y el Utilizando las definiciones anteriores se tiene que:
+
+$$ RAD = \frac{E}{C + \frac{1}{2} M + \frac{1}{4} Cat} $$
+
+# Preguntas pendientes:
+
+
+### ¿Como afecta al MIDE la contratación de un doctor?
+### ¿Como afecta al MIDE la contratación de un master?
+### ¿Como afecta al MIDE la contratación de un docente sin posgrado?
+### ¿Como afecta al MIDE la contratación de un docente sin posgrado?
